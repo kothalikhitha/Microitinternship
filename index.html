@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Professional Password Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    .password-strength {
+      transition: width 0.3s ease, background-color 0.3s ease;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-gray-800 min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md bg-white/10 backdrop-blur-lg rounded-xl shadow-2xl overflow-hidden border border-white/10">
+    <div class="p-8">
+      <div class="flex items-center justify-between mb-8">
+        <h1 class="text-2xl font-bold text-white">
+          <i class="fas fa-lock mr-2"></i> SecurePass
+        </h1>
+        <div class="text-white/60 text-sm">
+          <span id="version">v1.0</span>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        <!-- Password Display -->
+        <div class="relative">
+          <input 
+            id="password-output" 
+            type="text" 
+            readonly
+            class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white font-mono text-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            placeholder="Your password will appear here">
+          <button 
+            id="copy-btn"
+            class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white transition-colors"
+            title="Copy to clipboard">
+            <i class="far fa-copy"></i>
+          </button>
+        </div>
+
+        <!-- Strength Meter -->
+        <div>
+          <div class="flex justify-between text-sm text-white/80 mb-1">
+            <span>Password Strength</span>
+            <span id="strength-text">Weak</span>
+          </div>
+          <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+            <div id="strength-meter" class="h-full password-strength w-0 bg-red-500"></div>
+          </div>
+        </div>
+
+        <!-- Length Slider -->
+        <div>
+          <div class="flex justify-between text-white/80 mb-2">
+            <label for="length-slider">Length: <span id="length-value">12</span></label>
+            <span class="text-xs">8-32</span>
+          </div>
+          <input 
+            id="length-slider"
+            type="range" 
+            min="8" 
+            max="32" 
+            value="12"
+            class="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white">
+        </div>
+
+        <!-- Character Options -->
+        <div class="grid grid-cols-2 gap-3">
+          <label class="flex items-center space-x-2 text-white/80 hover:text-white cursor-pointer">
+            <input type="checkbox" id="uppercase" checked class="rounded bg-white/10 border-white/10 text-blue-500 focus:ring-blue-500">
+            <span>Uppercase (A-Z)</span>
+          </label>
+          <label class="flex items-center space-x-2 text-white/80 hover:text-white cursor-pointer">
+            <input type="checkbox" id="lowercase" checked class="rounded bg-white/10 border-white/10 text-blue-500 focus:ring-blue-500">
+            <span>Lowercase (a-z)</span>
+          </label>
+          <label class="flex items-center space-x-2 text-white/80 hover:text-white cursor-pointer">
+            <input type="checkbox" id="numbers" checked class="rounded bg-white/10 border-white/10 text-blue-500 focus:ring-blue-500">
+            <span>Numbers (0-9)</span>
+          </label>
+          <label class="flex items-center space-x-2 text-white/80 hover:text-white cursor-pointer">
+            <input type="checkbox" id="symbols" checked class="rounded bg-white/10 border-white/10 text-blue-500 focus:ring-blue-500">
+            <span>Symbols (!@#$)</span>
+          </label>
+        </div>
+
+        <!-- Generate Button -->
+        <button
+          id="generate-btn"
+          class="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg shadow-lg transition-all transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+          <i class="fas fa-key mr-2"></i> Generate Password
+        </button>
+      </div>
+    </div>
+
+    <div class="bg-white/5 px-6 py-4 text-center text-xs text-white/50">
+      <p>Generated passwords are created locally in your browser and never sent over the internet.</p>
+    </div>
+  </div>
+
+  <script>
+    // Character sets
+    const charSets = {
+      uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+      lowercase: 'abcdefghijklmnopqrstuvwxyz',
+      numbers: '0123456789',
+      symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+    };
+
+    // DOM Elements
+    const elements = {
+      output: document.getElementById('password-output'),
+      copyBtn: document.getElementById('copy-btn'),
+      generateBtn: document.getElementById('generate-btn'),
+      lengthSlider: document.getElementById('length-slider'),
+      lengthValue: document.getElementById('length-value'),
+      strengthMeter: document.getElementById('strength-meter'),
+      strengthText: document.getElementById('strength-text'),
+      checkboxes: {
+        uppercase: document.getElementById('uppercase'),
+        lowercase: document.getElementById('lowercase'),
+        numbers: document.getElementById('numbers'),
+        symbols: document.getElementById('symbols')
+      }
+    };
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      // Generate first password
+      generatePassword();
+      
+      // Update length display
+      elements.lengthSlider.addEventListener('input', () => {
+        elements.lengthValue.textContent = elements.lengthSlider.value;
+      });
+    });
+
+    // Event Listeners
+    elements.generateBtn.addEventListener('click', generatePassword);
+    elements.copyBtn.addEventListener('click', copyToClipboard);
+
+    // Core Functions
+    function generatePassword() {
+      const length = parseInt(elements.lengthSlider.value);
+      const options = Object.keys(elements.checkboxes)
+        .filter(key => elements.checkboxes[key].checked);
+      
+      if (options.length === 0) {
+        showError('Please select at least one character type');
+        return;
+      }
+
+      // Build character pool and ensure at least one of each selected type
+      let charPool = '';
+      let password = '';
+      
+      options.forEach(type => {
+        charPool += charSets[type];
+        password += getRandomChar(charSets[type]);
+      });
+
+      // Fill remaining characters
+      while (password.length < length) {
+        password += getRandomChar(charPool);
+      }
+
+      // Shuffle to mix the required characters
+      password = shuffleString(password);
+      
+      // Update UI
+      elements.output.value = password;
+      updateStrengthIndicator(password);
+    }
+
+    function copyToClipboard() {
+      if (!elements.output.value) return;
+      
+      navigator.clipboard.writeText(elements.output.value)
+        .then(() => {
+          elements.copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+          setTimeout(() => {
+            elements.copyBtn.innerHTML = '<i class="far fa-copy"></i>';
+          }, 2000);
+        })
+        .catch(err => {
+          console.error('Failed to copy:', err);
+        });
+    }
+
+    function updateStrengthIndicator(password) {
+      let strength = 0;
+      
+      // Length contributes up to 50% of strength
+      strength += Math.min(password.length / 32 * 50, 50);
+      
+      // Character variety contributes the rest
+      const hasUppercase = /[A-Z]/.test(password);
+      const hasLowercase = /[a-z]/.test(password);
+      const hasNumbers = /[0-9]/.test(password);
+      const hasSymbols = /[^A-Za-z0-9]/.test(password);
+      
+      const varietyCount = [hasUppercase, hasLowercase, hasNumbers, hasSymbols]
+        .filter(Boolean).length;
+      
+      strength += varietyCount * 12.5; // 12.5% per variety type (max 50%)
+      
+      // Update UI
+      strength = Math.round(strength);
+      elements.strengthMeter.style.width = `${strength}%`;
+      
+      // Set color and text based on strength
+      if (strength < 40) {
+        elements.strengthMeter.style.backgroundColor = '#ef4444'; // red
+        elements.strengthText.textContent = 'Weak';
+      } else if (strength < 70) {
+        elements.strengthMeter.style.backgroundColor = '#f59e0b'; // amber
+        elements.strengthText.textContent = 'Medium';
+      } else if (strength < 90) {
+        elements.strengthMeter.style.backgroundColor = '#3b82f6'; // blue
+        elements.strengthText.textContent = 'Strong';
+      } else {
+        elements.strengthMeter.style.backgroundColor = '#10b981'; // emerald
+        elements.strengthText.textContent = 'Very Strong';
+      }
+    }
+
+    // Helper Functions
+    function getRandomChar(str) {
+      return str[Math.floor(Math.random() * str.length)];
+    }
+
+    function shuffleString(str) {
+      const array = str.split('');
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array.join('');
+    }
+
+    function showError(message) {
+      // Simple error display - could be enhanced with toast notifications
+      alert(message);
+    }
+  </script>
+  <footer class="footer footer-center p-10 bg-base-300">
+    <div>
+        <center>
+            <p style="color: white;">Designed & Developed by <a href="https://github.com/kothalikhitha" target="_blank" class="link link-primary"> KOTHA LIKHITHA</a></p>
+            <p style="color: white;">© 2025 KOTHA LIKHITHA. All rights reserved.</p>
+        </center>
+    </div>
+</footer>
+</body>
+</html>
